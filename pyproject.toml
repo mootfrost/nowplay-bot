@@ -1,0 +1,23 @@
+[project]
+name = "music_bot"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "aiohttp>=3.11.14",
+    "alembic>=1.15.2",
+    "asyncpg>=0.30.0",
+    "fastapi>=0.115.12",
+    "mediafile>=0.13.0",
+    "mutagen>=1.47.0",
+    "psycopg2>=2.9.10",
+    "pydantic-settings>=2.8.1",
+    "pytaglib>=3.0.1",
+    "requests>=2.32.3",
+    "sqlalchemy[asyncio]>=2.0.40",
+    "telethon>=1.39.0",
+    "uvicorn>=0.34.0",
+    "yt-dlp>=2025.3.31",
+    "ytmusicapi>=1.10.3",
+]
