@@ -8,18 +8,19 @@ from telethon.tl.types import (
     TypeInputFile,
     InputFile,
     DocumentAttributeAudio,
-    InputPeerSelf
+    InputPeerSelf, InputDocument
 )
 from telethon import functions
 from telethon.utils import get_input_document
 import urllib.parse
 from mutagen.id3 import ID3, APIC
 import logging
-import uuid
+from cachetools import LRUCache
+
 
 from app.MusicProvider import MusicProviderContext, SpotifyStrategy
 from app.config import config
-from app.dependencies import get_session
+from app.dependencies import get_session, get_session_context
 from app.models import Track
 from app.youtube_api import name_to_youtube, download_youtube
 
@@ -33,6 +34,7 @@ logger = logging.getLogger(__name__)
 client = TelegramClient('nowplaying', config.api_id, config.api_hash)
 client.parse_mode = 'html'
 dummy_file: TypeInputFile = None
+cache = LRUCache(maxsize=100)
 
 
 def get_link_account_keyboard():
@@ -94,20 +96,22 @@ async def update_dummy_file_cover(cover_url: str):
 
 
 async def build_response(e: events.InlineQuery.Event, track: Track):
-    track_id = f'{track.spotify_id}__{track.name}__{track.artist}'
     if not track.telegram_id:
         await update_dummy_file()
         buttons = [Button.inline('Loading', 'loading')]
     else:
         global dummy_file
-        dummy_file = InputFile(int(track.telegram_id), 1, track.name, track.telegram_md5_checksum)
+        dummy_file = InputDocument(
+            id=track.telegram_id,
+            access_hash=track.telegram_access_hash,
+            file_reference=track.telegram_file_reference
+        )
         buttons = None
-        track_id += '__cached'
     return e.builder.document(
         file=dummy_file,
         title=track.name,
         description=track.artist,
-        id=track_id,
+        id=track.spotify_id,
         mime_type='audio/mpeg',
         attributes=[
             DocumentAttributeAudio(
@@ -131,17 +135,14 @@ async def query_list(e: events.InlineQuery.Event):
 
     for track in tracks:
         track = await context.get_cached_track(track)
+        cache[track.spotify_id] = track
         result.append(await build_response(e, track))
     await e.answer(result)
 
 
-@client.on(events.Raw([UpdateBotInlineSend]))
-async def send_track(e: UpdateBotInlineSend):
-    if e.id.endswith('__cached'):
-        return
-    track_id, name, artist = e.id.split('__')[:4]
+async def get_track_file(track):
     yt_id = await asyncio.get_event_loop().run_in_executor(
-        None, functools.partial(name_to_youtube, f'{name} - {artist}')
+        None, functools.partial(name_to_youtube, f'{track.name} - {track.artist}')
     )
     audio, duration = await download_youtube(yt_id)
     _, media, _ = await client._file_to_media(
@@ -150,8 +151,8 @@ async def send_track(e: UpdateBotInlineSend):
             DocumentAttributeAudio(
                 duration=duration,
                 voice=False,
-                title=name,
-                performer=artist,
+                title=track.name,
+                performer=track.artist,
                 waveform=None,
             )]
     )
@@ -160,9 +161,28 @@ async def send_track(e: UpdateBotInlineSend):
             InputPeerSelf(), media=media
         )
     )
-    file = get_input_document(uploaded_media.document)
-    await client.edit_message(e.msg_id, file=file, text=get_track_links(track_id))
 
+    return get_input_document(uploaded_media.document)
+
+
+async def cache_file(track):
+    async with get_session_context() as session:
+        session.add(track)
+        await session.commit()
+
+
+@client.on(events.Raw([UpdateBotInlineSend]))
+async def send_track(e: UpdateBotInlineSend):
+    track = cache[e.id]
+    if track.telegram_id:
+        return
+
+    file = await get_track_file(track)
+    track.telegram_id = file.id
+    track.telegram_access_hash = file.access_hash
+    track.telegram_file_reference = file.file_reference
+    await cache_file(track)
+    await client.edit_message(e.msg_id, file=file, text=get_track_links(e.id))
 
 
 async def main():

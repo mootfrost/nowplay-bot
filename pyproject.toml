@@ -8,6 +8,7 @@ dependencies = [
     "aiohttp>=3.11.14",
     "alembic>=1.15.2",
     "asyncpg>=0.30.0",
+    "cachetools>=5.5.2",
     "fastapi>=0.115.12",
     "mediafile>=0.13.0",
     "mutagen>=1.47.0",

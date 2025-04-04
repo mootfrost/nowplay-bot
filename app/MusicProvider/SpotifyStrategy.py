@@ -52,7 +52,7 @@ class SpotifyStrategy(MusicProviderStrategy):
             'Content-Type': 'application/json'
         }
         user_params = {
-            'limit': 5
+            'limit': 1
         }
         res = []
         async with aiohttp.ClientSession() as session:
