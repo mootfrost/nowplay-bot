@@ -70,6 +70,8 @@ class SpotifyStrategy(MusicProviderStrategy):
         }
         async with aiohttp.ClientSession() as session:
             resp = await session.get(f'https://api.spotify.com/v1{endpoint}', headers=user_headers)
+            if resp.status != 200:
+                return None
             return await resp.json()
 
     async def get_tracks(self, token) -> list[Track]:

@@ -63,7 +63,6 @@ async def spotify_callback(code: str, state: str, session: AsyncSession = Depend
     except:
         raise LinkException()
 
-
     token, refresh_token, expires_in = await get_spotify_token(code)
     user = await session.get(User, user_id)
     if user:
