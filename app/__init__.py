@@ -1,12 +1,13 @@
 import asyncio
 import functools
 import io
+import time
+
 import aiohttp
 from telethon import TelegramClient, events, Button
 from telethon.tl.types import (
     UpdateBotInlineSend,
     TypeInputFile,
-    InputFile,
     DocumentAttributeAudio,
     InputPeerSelf, InputDocument
 )
@@ -16,6 +17,7 @@ import urllib.parse
 from mutagen.id3 import ID3, APIC
 import logging
 from cachetools import LRUCache
+import jwt
 
 
 from app.MusicProvider import MusicProviderContext, SpotifyStrategy
@@ -49,12 +51,17 @@ async def start(e: events.NewMessage.Event):
 
 @client.on(events.CallbackQuery(pattern='connect_spotify'))
 async def connect_spotify(e: events.CallbackQuery.Event):
+    payload = {
+        'tg_id': e.sender_id,
+        'exp': int(time.time()) + 300
+    }
+
     params = {
         'client_id': config.spotify.client_id,
         'response_type': 'code',
         'redirect_uri': config.spotify.redirect,
-        'scope': 'user-read-recently-played',
-        'state': f'tg_{e.sender_id}'
+        'scope': 'user-read-recently-played user-read-currently-playing',
+        'state': jwt.encode(payload, config.jwt_secret, algorithm='HS256')
     }
     await e.respond('Link your Spotify account',
                     buttons=[Button.url('Link', f"https://accounts.spotify.com/authorize?{urllib.parse.urlencode(params)}")])
@@ -130,7 +137,7 @@ async def build_response(e: events.InlineQuery.Event, track: Track):
 @client.on(events.InlineQuery())
 async def query_list(e: events.InlineQuery.Event):
     context = MusicProviderContext(SpotifyStrategy(e.sender_id))
-    tracks = await context.get_tracks()
+    tracks = (await context.get_tracks())[:5]
     result = []
 
     for track in tracks:

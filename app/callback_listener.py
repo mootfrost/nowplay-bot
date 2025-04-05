@@ -1,36 +1,44 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 import uvicorn
 from telethon import TelegramClient
-import base64
 import aiohttp
 import time
+import jwt
 
 from app.dependencies import get_session
 from app.models.user import User
-from config import config
+from config import config, spotify_creds
 
 client = TelegramClient('nowplaying_callback', config.api_id, config.api_hash)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global r
     await client.connect()
     await client.sign_in(bot_token=config.bot_token)
     yield
 
 
 app = FastAPI(lifespan=lifespan)
-creds = base64.b64encode(config.spotify.client_id.encode() + b':' + config.spotify.client_secret.encode()).decode(
-    "utf-8")
+app.mount('/static', StaticFiles(directory='static', html=True), name='static')
 
 
-async def get_spotify_token(code: str, user_id: int):
+class LinkException(Exception):
+    pass
+
+
+@app.exception_handler(LinkException)
+async def unicorn_exception_handler(request: Request, exc: LinkException):
+    return FileResponse('static/error.html', status_code=400)
+
+
+async def get_spotify_token(code: str):
     token_headers = {
-        "Authorization": "Basic " + creds,
+        "Authorization": "Basic " + spotify_creds,
         "Content-Type": "application/x-www-form-urlencoded"
     }
     token_data = {
@@ -43,57 +51,20 @@ async def get_spotify_token(code: str, user_id: int):
         resp = await session.post("https://accounts.spotify.com/api/token", data=token_data, headers=token_headers)
     resp = await resp.json()
 
+    if 'access_token' not in resp:
+        raise LinkException()
     return resp['access_token'], resp['refresh_token'], int(resp['expires_in'])
-
-
-def generate_success_reponse():
-    content = """<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Success</title>
-    <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #ffffff;
-            font-family: 'Poppins', sans-serif;
-            text-align: center;
-            color: #000;
-        }
-        img {
-            max-width: 120px;
-            margin-bottom: 20px;
-        }
-        h1 {
-            font-size: 28px;
-            font-weight: 600;
-            color: #000;
-            margin-bottom: 10px;
-        }
-        p {
-            font-size: 18px;
-            font-weight: 400;
-            opacity: 0.7;
-        }
-    </style>
-</head>
-<body>
-<h1>@nowlisten bot</h1>
-<h1>Success! Now you can return to the bot</h1>
-</body>
-</html>"""
-    return HTMLResponse(content=content)
 
 
 @app.get('/spotify_callback')
 async def spotify_callback(code: str, state: str, session: AsyncSession = Depends(get_session)):
-    user_id = int(state.replace('tg_', ''))
-    token, refresh_token, expires_in = await get_spotify_token(code, user_id)
+    try:
+        user_id = jwt.decode(state, config.jwt_secret, algorithms=['HS256'])['tg_id']
+    except:
+        raise LinkException()
+
+
+    token, refresh_token, expires_in = await get_spotify_token(code)
     user = await session.get(User, user_id)
     if user:
         user.spotify_access_token = token
@@ -108,7 +79,7 @@ async def spotify_callback(code: str, state: str, session: AsyncSession = Depend
         session.add(user)
     await session.commit()
     await client.send_message(user_id, "Account linked!")
-    return generate_success_reponse()
+    return FileResponse('static/success.html', media_type='text/html')
 
 
 if __name__ == '__main__':

@@ -1,3 +1,5 @@
+import base64
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import BaseModel
 
@@ -23,8 +25,10 @@ class Config(BaseSettings):
     spotify: SpotifyCreds
     yt: GoogleApiCreds
     proxy: str = ''
+    jwt_secret: str
 
 
 config = Config(_env_file='.env')
+spotify_creds = base64.b64encode(config.spotify.client_id.encode() + b':' + config.spotify.client_secret.encode()).decode("utf-8")
 
-__all__ = ['config']
+__all__ = ['config', 'spotify_creds']
