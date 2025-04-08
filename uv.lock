@@ -382,7 +382,6 @@ dependencies = [
     { name = "psycopg2" },
     { name = "pydantic-settings" },
     { name = "pyjwt" },
-    { name = "pytaglib" },
     { name = "requests" },
     { name = "sqlalchemy", extra = ["asyncio"] },
     { name = "telethon" },
@@ -404,7 +403,6 @@ requires-dist = [
     { name = "psycopg2", specifier = ">=2.9.10" },
     { name = "pydantic-settings", specifier = ">=2.8.1" },
     { name = "pyjwt", specifier = ">=2.10.1" },
-    { name = "pytaglib", specifier = ">=3.0.1" },
     { name = "requests", specifier = ">=2.32.3" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.40" },
     { name = "telethon", specifier = ">=1.39.0" },
@@ -560,19 +558,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/bd/11/293dd436aea955d45fc4e8a35b6ae7270f5b8e00b53cf6c024c83b657a11/PySocks-1.7.1.tar.gz", hash = "sha256:3f8804571ebe159c380ac6de37643bb4685970655d3bba243530d6558b799aa0", size = 284429 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/8d/59/b4572118e098ac8e46e399a1dd0f2d85403ce8bbaad9ec79373ed6badaf9/PySocks-1.7.1-py3-none-any.whl", hash = "sha256:2725bd0a9925919b9b51739eea5f9e2bae91e83288108a9ad338b2e3a4435ee5", size = 16725 },
-]
-
-[[package]]
-name = "pytaglib"
-version = "3.0.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/2a/f5/90d40088d4839b50b6aaa1de403d12053acfc7724901f7749d9724039882/pytaglib-3.0.1.tar.gz", hash = "sha256:b9255765d72e237e8b2843f2df3763f7ad3fdc6b6b3ffdd027c3f373c9bdd787", size = 500599 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ba/f8/a2a9eaa79d200f5acf1d8a48b38db042668dc3e67bf56b569b11c5d30349/pytaglib-3.0.1-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:1173675b8868498ed135cc488abfc70bc2016dc78f615a5b27adc042afd3ef9a", size = 765166 },
-    { url = "https://files.pythonhosted.org/packages/94/7e/739313be7611fd6f6d18407059255118ff4d09576afeacdd6246c2c98f1e/pytaglib-3.0.1-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:4b56cdbd3c029308634f4efa2134d91f74714eacfb6f43c0ed430fe74fa5cc09", size = 790362 },
-    { url = "https://files.pythonhosted.org/packages/ba/cc/2bf2511ab9a4adbd4eb3cdf35a6ec429e629bf5212d59c50b0ee4de3ede6/pytaglib-3.0.1-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:041a559015167691b14ac017657e0f7ab5e5398ebe7936dbbcd9940cd4277e24", size = 1932489 },
-    { url = "https://files.pythonhosted.org/packages/b7/89/7c43fbe9f5c89c552ff5ea4bdfdc9e73f343a764d4dca67583ad293dd1f2/pytaglib-3.0.1-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:08e513093a1e3859b6d10319f8dc2509891b0b602b0ed84cad64b59d5e0a87e2", size = 2813214 },
-    { url = "https://files.pythonhosted.org/packages/87/d9/a81226deee5f687edc5e914b7c0a4f1f2cfd1302fb265be37025cf9b352b/pytaglib-3.0.1-cp313-cp313-win_amd64.whl", hash = "sha256:a65f310df7cd78e4218a7bb581da7775192fc81dfcb2612da1ed93091c8671b9", size = 256377 },
 ]
 
 [[package]]

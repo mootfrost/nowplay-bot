@@ -10,6 +10,10 @@ class SpotifyCreds(BaseModel):
     redirect: str
 
 
+class YandexMusicCreds(BaseModel):
+    client_id: str
+
+
 class GoogleApiCreds(BaseModel):
     client_id: str
     client_secret: str
@@ -24,6 +28,8 @@ class Config(BaseSettings):
     db_string: str
     spotify: SpotifyCreds
     yt: GoogleApiCreds
+    ym: YandexMusicCreds
+
     proxy: str = ''
     jwt_secret: str
 

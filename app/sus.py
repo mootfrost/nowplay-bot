@@ -1,12 +1,26 @@
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC
+from yandex_music import  Client
 
-# Open MP3 file
-audio = MP3("empty.mp3", ID3=ID3)
+client = Client('').init()
+print(client.queues_list())
 
-# Check if APIC (cover art) exists
-cover_art = audio.tags.getall("APIC")
-if cover_art:
-    print("✅ Cover art is embedded successfully.")
-else:
-    print("❌ Cover art is missing!")
+queues = client.tracks(19801159)
+print(queues)
+# Последняя проигрываемая очередь всегда в начале списка
+last_queue = client.queue(queues[0].id)
+
+last_track_id = last_queue.get_current_track()
+last_track = last_track_id.fetch_track()
+
+artists = ', '.join(last_track.artists_name())
+title = last_track.title
+print(f'Сейчас играет: {artists} - {title}')
+
+try:
+    lyrics = last_track.get_lyrics('LRC')
+    print(lyrics.fetch_lyrics())
+
+    print(f'\nИсточник: {lyrics.major.pretty_name}')
+except NotFoundError:
+    print('Текст песни отсутствует')

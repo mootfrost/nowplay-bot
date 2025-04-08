@@ -56,13 +56,16 @@ async def get_spotify_token(code: str):
     return resp['access_token'], resp['refresh_token'], int(resp['expires_in'])
 
 
-@app.get('/spotify_callback')
-async def spotify_callback(code: str, state: str, session: AsyncSession = Depends(get_session)):
+def get_decoded_id(string: str):
     try:
-        user_id = jwt.decode(state, config.jwt_secret, algorithms=['HS256'])['tg_id']
+        return jwt.decode(string, config.jwt_secret, algorithms=['HS256'])['tg_id']
     except:
         raise LinkException()
 
+
+@app.get('/spotify_callback')
+async def spotify_callback(code: str, state: str, session: AsyncSession = Depends(get_session)):
+    user_id = get_decoded_id(state)
     token, refresh_token, expires_in = await get_spotify_token(code)
     user = await session.get(User, user_id)
     if user:
@@ -74,6 +77,22 @@ async def spotify_callback(code: str, state: str, session: AsyncSession = Depend
                     spotify_access_token=token,
                     spotify_refresh_token=refresh_token,
                     spotify_refresh_at=int(time.time()) + expires_in
+                    )
+        session.add(user)
+    await session.commit()
+    await client.send_message(user_id, "Account linked!")
+    return FileResponse('static/success.html', media_type='text/html')
+
+
+@app.get('/ym_callback')
+async def ym_callback(state: str, access_token: str, session: AsyncSession = Depends(get_session)):
+    user_id = get_decoded_id(state)
+    user = await session.get(User, user_id)
+    if user:
+        user.ymusic_token = access_token
+    else:
+        user = User(id=user_id,
+                    ymusic_token=access_token
                     )
         session.add(user)
     await session.commit()

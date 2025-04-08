@@ -17,10 +17,11 @@ import urllib.parse
 from mutagen.id3 import ID3, APIC
 import logging
 from cachetools import LRUCache
+from sqlalchemy import select
 import jwt
 
 
-from app.MusicProvider import MusicProviderContext, SpotifyStrategy
+from app.MusicProvider import MusicProviderContext, SpotifyStrategy, YandexMusicStrategy
 from app.config import config
 from app.dependencies import get_session, get_session_context
 from app.models import Track
@@ -35,36 +36,42 @@ logger = logging.getLogger(__name__)
 
 client = TelegramClient('nowplaying', config.api_id, config.api_hash)
 client.parse_mode = 'html'
-dummy_file: TypeInputFile = None
 cache = LRUCache(maxsize=100)
 
 
-def get_link_account_keyboard():
-    return [Button.inline('Spotify', 'connect_spotify')]
-
-
-@client.on(events.NewMessage(pattern='/start'))
-async def start(e: events.NewMessage.Event):
-    await e.respond("Hello! I'm a bot that lets you download music you listen in inline mode. Press button below to connect your account.",
-                    buttons=get_link_account_keyboard())
-
-
-@client.on(events.CallbackQuery(pattern='connect_spotify'))
-async def connect_spotify(e: events.CallbackQuery.Event):
-    payload = {
-        'tg_id': e.sender_id,
-        'exp': int(time.time()) + 300
-    }
-
+def get_spotify_link(user_id):
     params = {
         'client_id': config.spotify.client_id,
         'response_type': 'code',
         'redirect_uri': config.spotify.redirect,
         'scope': 'user-read-recently-played user-read-currently-playing',
-        'state': jwt.encode(payload, config.jwt_secret, algorithm='HS256')
+        'state': user_id
     }
-    await e.respond('Link your Spotify account',
-                    buttons=[Button.url('Link', f"https://accounts.spotify.com/authorize?{urllib.parse.urlencode(params)}")])
+    return f"https://accounts.spotify.com/authorize?{urllib.parse.urlencode(params)}"
+
+
+def get_ymusic_link(user_id):
+    params = {
+        'response_type': 'token',
+        'client_id': config.ym.client_id,
+        'state': user_id
+    }
+    return f"https://oauth.yandex.ru/authorize?{urllib.parse.urlencode(params)}"
+
+
+@client.on(events.NewMessage(pattern='/start'))
+async def start(e: events.NewMessage.Event):
+    payload = {
+        'tg_id': e.chat_id,
+        'exp': int(time.time()) + 300
+    }
+    enc_user_id = jwt.encode(payload, config.jwt_secret, algorithm='HS256')
+    buttons = [
+        Button.url('Link Spotify', get_spotify_link(enc_user_id)),
+        Button.url('Link Yandex music', get_ymusic_link(enc_user_id)),
+    ]
+    await e.respond("Hi! I can help you share music you listen on Spotify or Yandex muisc\n\nPress button below to authorize your account first",
+                    buttons=buttons)
 
 
 async def fetch_file(url):
@@ -72,11 +79,6 @@ async def fetch_file(url):
         async with session.get(url) as response:
             response.raise_for_status()
             return await response.read()
-
-
-async def update_dummy_file():
-    global dummy_file
-    dummy_file = await client.upload_file('empty.mp3')
 
 
 def get_track_links(track_id):
@@ -98,16 +100,14 @@ async def update_dummy_file_cover(cover_url: str):
     ))
     res = io.BytesIO()
     audio.save(res)
-    global dummy_file
     dummy_file = await client.upload_file(res.getvalue(), file_name='empty.mp3')
 
 
 async def build_response(e: events.InlineQuery.Event, track: Track):
     if not track.telegram_id:
-        await update_dummy_file()
+        dummy_file = await client.upload_file('empty.mp3')
         buttons = [Button.inline('Loading', 'loading')]
     else:
-        global dummy_file
         dummy_file = InputDocument(
             id=track.telegram_id,
             access_hash=track.telegram_access_hash,
@@ -136,7 +136,7 @@ async def build_response(e: events.InlineQuery.Event, track: Track):
 
 @client.on(events.InlineQuery())
 async def query_list(e: events.InlineQuery.Event):
-    context = MusicProviderContext(SpotifyStrategy(e.sender_id))
+    context = MusicProviderContext(YandexMusicStrategy(e.sender_id))
     tracks = (await context.get_tracks())[:5]
     result = []
 
@@ -147,11 +147,8 @@ async def query_list(e: events.InlineQuery.Event):
     await e.answer(result)
 
 
-async def get_track_file(track):
-    yt_id = await asyncio.get_event_loop().run_in_executor(
-        None, functools.partial(name_to_youtube, f'{track.name} - {track.artist}')
-    )
-    audio, duration = await download_youtube(yt_id)
+async def track_to_file(track):
+    audio, duration = await download_youtube(track.yt_id)
     _, media, _ = await client._file_to_media(
         audio,
         attributes=[
@@ -178,23 +175,53 @@ async def cache_file(track):
         await session.commit()
 
 
+async def download_track(track):
+    yt_id = await asyncio.get_event_loop().run_in_executor(
+        None, functools.partial(name_to_youtube, f'{track.name} - {track.artist}')
+    )
+    async with get_session_context() as session:
+        existing = await session.scalar(
+            select(Track).where(Track.yt_id == yt_id)
+        )
+
+        if existing and existing.telegram_id:
+            updated = False
+            if not existing.spotify_id and track.spotify_id:
+                existing.spotify_id = track.spotify_id
+                updated = True
+            if not existing.ymusic_id and track.ymusic_id:
+                existing.ymusic_id = track.ymusic_id
+                updated = True
+            if updated:
+                await session.commit()
+
+            return InputDocument(
+                id=existing.telegram_id,
+                access_hash=existing.telegram_access_hash,
+                file_reference=existing.telegram_file_reference
+            )
+
+    file = await track_to_file(track)
+    track.telegram_id = file.id
+    track.telegram_access_hash = file.access_hash
+    track.telegram_file_reference = file.file_reference
+    track.yt_id = yt_id
+    await cache_file(track)
+    return file
+
+
 @client.on(events.Raw([UpdateBotInlineSend]))
 async def send_track(e: UpdateBotInlineSend):
     track = cache[e.id]
     if track.telegram_id:
         return
 
-    file = await get_track_file(track)
-    track.telegram_id = file.id
-    track.telegram_access_hash = file.access_hash
-    track.telegram_file_reference = file.file_reference
-    await cache_file(track)
+    file = await download_track(track)
     await client.edit_message(e.msg_id, file=file, text=get_track_links(e.id))
 
 
 async def main():
     await client.start(bot_token=config.bot_token)
-    await update_dummy_file()
     logger.info('Bot started')
     await client.run_until_disconnected()
 
