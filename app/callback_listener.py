@@ -11,7 +11,7 @@ import jwt
 
 from app.dependencies import get_session
 from app.models.user import User
-from config import config, spotify_creds
+from config import config, OauthCreds
 
 client = TelegramClient('nowplaying_callback', config.api_id, config.api_hash)
 
@@ -32,25 +32,23 @@ class LinkException(Exception):
 
 
 @app.exception_handler(LinkException)
-async def unicorn_exception_handler(request: Request, exc: LinkException):
+async def link_exception_handler(request: Request, exc: LinkException):
     return FileResponse('static/error.html', status_code=400)
 
 
-async def get_spotify_token(code: str):
+async def code_to_token(code: str, uri: str, creds: OauthCreds) -> tuple[str, str, int]:
     token_headers = {
-        "Authorization": "Basic " + spotify_creds,
+        "Authorization": "Basic " + creds.encoded,
         "Content-Type": "application/x-www-form-urlencoded"
     }
     token_data = {
         "grant_type": "authorization_code",
         "code": code,
-        "redirect_uri": config.spotify.redirect
+        "redirect_uri": creds.redirect
     }
-
     async with aiohttp.ClientSession() as session:
-        resp = await session.post("https://accounts.spotify.com/api/token", data=token_data, headers=token_headers)
+        resp = await session.post(uri, data=token_data, headers=token_headers)
     resp = await resp.json()
-
     if 'access_token' not in resp:
         raise LinkException()
     return resp['access_token'], resp['refresh_token'], int(resp['expires_in'])
@@ -66,17 +64,19 @@ def get_decoded_id(string: str):
 @app.get('/spotify_callback')
 async def spotify_callback(code: str, state: str, session: AsyncSession = Depends(get_session)):
     user_id = get_decoded_id(state)
-    token, refresh_token, expires_in = await get_spotify_token(code)
+    token, refresh_token, expires_in = await code_to_token(code, 'https://accounts.spotify.com/api/token', config.spotify)
+    creds = {
+        'access_token': token,
+        'refresh_token': refresh_token,
+        'refresh_at': int(time.time()) + expires_in
+    }
+
     user = await session.get(User, user_id)
     if user:
-        user.spotify_access_token = token
-        user.spotify_refresh_token = refresh_token
-        user.spotify_refreshed_at = int(time.time())
+        user.spotify_auth = creds
     else:
         user = User(id=user_id,
-                    spotify_access_token=token,
-                    spotify_refresh_token=refresh_token,
-                    spotify_refresh_at=int(time.time()) + expires_in
+                    spotify_auth=creds
                     )
         session.add(user)
     await session.commit()
@@ -85,14 +85,20 @@ async def spotify_callback(code: str, state: str, session: AsyncSession = Depend
 
 
 @app.get('/ym_callback')
-async def ym_callback(state: str, access_token: str, session: AsyncSession = Depends(get_session)):
+async def ym_callback(state: str, code: str, cid: str, session: AsyncSession = Depends(get_session)):
     user_id = get_decoded_id(state)
+    token, refresh_token, expires_in = await code_to_token(code, 'https://oauth.yandex.com/token', config.ymusic)
+    creds = {
+        'access_token': token,
+        'refresh_token': refresh_token,
+        'refresh_at': int(time.time()) + expires_in
+    }
     user = await session.get(User, user_id)
     if user:
-        user.ymusic_token = access_token
+        user.ymusic_auth = creds
     else:
         user = User(id=user_id,
-                    ymusic_token=access_token
+                    ymusic_auth=creds
                     )
         session.add(user)
     await session.commit()

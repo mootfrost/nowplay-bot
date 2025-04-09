@@ -4,7 +4,7 @@ import time
 
 import aiohttp
 
-from app.config import config, spotify_creds
+from app.config import config
 from app.MusicProvider.Strategy import MusicProviderStrategy
 from app.dependencies import get_session, get_session_context
 from sqlalchemy import select, update
@@ -27,7 +27,7 @@ def convert_track(track: dict):
 async def refresh_token(refresh_token):
     token_headers = {
         "Content-Type": "application/x-www-form-urlencoded",
-        'Authorization': 'Basic ' + spotify_creds
+        'Authorization': 'Basic ' + config.spotify.encoded
     }
     token_data = {
         "grant_type": "refresh_token",
@@ -51,10 +51,10 @@ class SpotifyStrategy(MusicProviderStrategy):
         if not user:
             return None
 
-        if int(time.time()) < user.spotify_refresh_at:
-            return user.spotify_access_token
+        if int(time.time()) < user.spotify_auth['refresh_at']:
+            return user.spotify_auth['access_token']
 
-        token, expires_in = await refresh_token(user.spotify_refresh_token)
+        token, expires_in = await refresh_token(user.spotify_auth['refresh_token'])
         async with get_session_context() as session:
             await session.execute(
                 update(User).where(User.id == self.user_id).values(spotify_access_token=token,
@@ -86,6 +86,8 @@ class SpotifyStrategy(MusicProviderStrategy):
             tracks.append(convert_track(item['track']))
 
         tracks = [x for x in tracks if x]
+        tracks = list(dict.fromkeys(tracks))
+        print(tracks)
         return tracks
 
     async def fetch_track(self, track: Track):

@@ -39,7 +39,7 @@ client.parse_mode = 'html'
 cache = LRUCache(maxsize=100)
 
 
-def get_spotify_link(user_id):
+def get_spotify_link(user_id) -> str:
     params = {
         'client_id': config.spotify.client_id,
         'response_type': 'code',
@@ -50,10 +50,10 @@ def get_spotify_link(user_id):
     return f"https://accounts.spotify.com/authorize?{urllib.parse.urlencode(params)}"
 
 
-def get_ymusic_link(user_id):
+def get_ymusic_link(user_id) -> str:
     params = {
-        'response_type': 'token',
-        'client_id': config.ym.client_id,
+        'response_type': 'code',
+        'client_id': config.ymusic.client_id,
         'state': user_id
     }
     return f"https://oauth.yandex.ru/authorize?{urllib.parse.urlencode(params)}"
@@ -74,14 +74,14 @@ async def start(e: events.NewMessage.Event):
                     buttons=buttons)
 
 
-async def fetch_file(url):
+async def fetch_file(url) -> bytes:
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             response.raise_for_status()
             return await response.read()
 
 
-def get_track_links(track_id):
+def get_track_links(track_id) -> str:
     return f'<a href="https://open.spotify.com/track/{track_id}">Spotify</a> | <a href="https://song.link/s/{track_id}">Other</a>'
 
 
@@ -136,7 +136,7 @@ async def build_response(e: events.InlineQuery.Event, track: Track):
 
 @client.on(events.InlineQuery())
 async def query_list(e: events.InlineQuery.Event):
-    context = MusicProviderContext(YandexMusicStrategy(e.sender_id))
+    context = MusicProviderContext(SpotifyStrategy(e.sender_id))
     tracks = (await context.get_tracks())[:5]
     result = []
 
@@ -179,6 +179,7 @@ async def download_track(track):
     yt_id = await asyncio.get_event_loop().run_in_executor(
         None, functools.partial(name_to_youtube, f'{track.name} - {track.artist}')
     )
+    track.yt_id = yt_id
     async with get_session_context() as session:
         existing = await session.scalar(
             select(Track).where(Track.yt_id == yt_id)
@@ -205,7 +206,6 @@ async def download_track(track):
     track.telegram_id = file.id
     track.telegram_access_hash = file.access_hash
     track.telegram_file_reference = file.file_reference
-    track.yt_id = yt_id
     await cache_file(track)
     return file
 

@@ -23,6 +23,13 @@ class Track(Base):
     cover_url: Mapped[str]
     used_times: Mapped[int] = mapped_column(Integer, default=1)
 
+    def __hash__(self):
+        return hash(self.spotify_id)
+
+    def __eq__(self, other):
+        if not isinstance(other, Track):
+            return NotImplemented
+        return self.spotify_id == other.spotify_id
 
 
 

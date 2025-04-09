@@ -4,14 +4,14 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import BaseModel
 
 
-class SpotifyCreds(BaseModel):
+class OauthCreds(BaseModel):
     client_id: str
     client_secret: str
     redirect: str
 
-
-class YandexMusicCreds(BaseModel):
-    client_id: str
+    @property
+    def encoded(self) -> str:
+        return base64.b64encode(self.client_id.encode() + b':' + self.client_secret.encode()).decode("utf-8")
 
 
 class GoogleApiCreds(BaseModel):
@@ -26,15 +26,14 @@ class Config(BaseSettings):
     api_id: int
     api_hash: str
     db_string: str
-    spotify: SpotifyCreds
+    spotify: OauthCreds
     yt: GoogleApiCreds
-    ym: YandexMusicCreds
+    ymusic: OauthCreds
 
     proxy: str = ''
     jwt_secret: str
 
 
 config = Config(_env_file='.env')
-spotify_creds = base64.b64encode(config.spotify.client_id.encode() + b':' + config.spotify.client_secret.encode()).decode("utf-8")
 
-__all__ = ['config', 'spotify_creds']
+__all__ = ['config', 'OauthCreds']
