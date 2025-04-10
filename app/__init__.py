@@ -114,7 +114,7 @@ async def fetch_file(url) -> bytes:
 # TODO: make faster and somehow fix cover not displaying in response
 async def update_dummy_file_cover(cover_url: str):
     cover = await fetch_file(cover_url)
-    dummy_name = 'empty.mp3'
+    dummy_name = 'app/empty.mp3'
     audio = ID3(dummy_name)
     audio.delall('APIC')
     audio.add(APIC(
@@ -131,7 +131,7 @@ async def update_dummy_file_cover(cover_url: str):
 
 async def build_response(track: Track, track_id: str, links: str):
     if not track.telegram_id:
-        dummy_file = await client.upload_file('empty.mp3')
+        dummy_file = await client.upload_file('app/empty.mp3')
         buttons = [Button.inline('Loading', 'loading')]
     else:
         dummy_file = InputDocument(

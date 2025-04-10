@@ -1,0 +1,21 @@
+services:
+  bot:
+    &bot
+    image: nowplaybot
+    build: .
+    env_file:
+      - .env
+    restart: unless-stopped
+    command: >
+      sh -c "ls && python -m alembic upgrade head && python app/__main__.py"
+
+
+  callback_listener:
+    <<: *bot
+    ports:
+      - 8080:8080
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.music_mootfrost_dev.rule=Host(`music.mootfrost.dev`)
+      - traefik.http.services.music_mootfrost_dev.loadbalancer.server.port=8080
+    command: python app/callback_listener.py
