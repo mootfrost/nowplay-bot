@@ -13,7 +13,6 @@ ytmusic = YTMusic('oauth.json', oauth_credentials=OAuthCredentials(client_id=con
 
 def name_to_youtube(name: str):
     results = ytmusic.search(name, 'songs', limit=5)
-    print(results)
     return results[0]['videoId']
 
 

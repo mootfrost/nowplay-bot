@@ -70,9 +70,11 @@ async def spotify_callback(code: str, state: str, session: AsyncSession = Depend
     user = await session.get(User, user_id)
     if user:
         user.spotify_auth = creds
+        user.default = 'spotify'
     else:
         user = User(id=user_id,
-                    spotify_auth=creds
+                    spotify_auth=creds,
+                    default='spotify'
                     )
         session.add(user)
     await session.commit()
@@ -88,9 +90,11 @@ async def ym_callback(state: str, code: str, cid: str, session: AsyncSession = D
     user = await session.get(User, user_id)
     if user:
         user.ymusic_auth = creds
+        user.default = 'ymusic'
     else:
         user = User(id=user_id,
-                    ymusic_auth=creds
+                    ymusic_auth=creds,
+                    default='ymusic'
                     )
         session.add(user)
     await session.commit()

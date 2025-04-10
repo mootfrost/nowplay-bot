@@ -18,14 +18,14 @@ import urllib.parse
 from mutagen.id3 import ID3, APIC
 import logging
 from cachetools import LRUCache
-from sqlalchemy import select
+from sqlalchemy import select, update
 import jwt
 
 
 from app.MusicProvider import MusicProviderContext, SpotifyStrategy, YandexMusicStrategy
 from app.config import config
 from app.dependencies import get_session, get_session_context
-from app.models import Track
+from app.models import Track, User
 from app.youtube_api import name_to_youtube, download_youtube
 
 logging.basicConfig(
@@ -38,6 +38,11 @@ logger = logging.getLogger(__name__)
 client = TelegramClient('nowplaying', config.api_id, config.api_hash)
 client.parse_mode = 'html'
 cache = LRUCache(maxsize=100)
+
+
+async def get_user(user_id):
+    async with get_session_context() as session:
+        return await session.scalar(select(User).where(User.id == user_id))
 
 
 def get_spotify_link(user_id) -> str:
@@ -75,15 +80,35 @@ async def start(e: events.NewMessage.Event):
                     buttons=buttons)
 
 
+@client.on(events.NewMessage(pattern='/default'))
+async def change_default(e: events.NewMessage.Event):
+    user = await get_user(e.chat_id)
+    if not user:
+        return await e.respond('Please link your account first')
+    buttons = []
+    if user.spotify_auth:
+        buttons.append(Button.inline('Spotify', 'default_spotify'))
+    if user.ymusic_auth:
+        buttons.append(Button.inline('Yandex music', 'default_ymusic'))
+
+    await e.respond('Select service you want to use as default', buttons=buttons)
+
+
+@client.on(events.CallbackQuery(pattern='default_*'))
+async def set_default(e: events.CallbackQuery.Event):
+    async with get_session_context() as session:
+        await session.execute(
+            update(User).where(User.id == e.sender_id).values(default=str(e.data).split('_')[1])
+        )
+        await session.commit()
+    await e.respond('Default service updated')
+
+
 async def fetch_file(url) -> bytes:
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             response.raise_for_status()
             return await response.read()
-
-
-def get_songlink(track_id) -> str:
-    return f'<a href="https://song.link/s/{track_id}">Other</a>'
 
 
 # TODO: make faster and somehow fix cover not displaying in response
@@ -137,7 +162,13 @@ async def build_response(track: Track, track_id: str, links: str):
 
 @client.on(events.InlineQuery())
 async def query_list(e: events.InlineQuery.Event):
-    ctx = MusicProviderContext(YandexMusicStrategy(e.sender_id))
+    user = await get_user(e.sender_id)
+    if not user:
+        return await e.answer(switch_pm='Link account first', switch_pm_param='link')
+    if user.default == 'spotify' and user.spotify_auth:
+        ctx = MusicProviderContext(SpotifyStrategy(e.sender_id))
+    else:
+        ctx = MusicProviderContext(YandexMusicStrategy(e.sender_id))
     tracks = (await ctx.get_tracks())[:5]
     result = []
 
