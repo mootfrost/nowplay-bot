@@ -9,7 +9,6 @@ class Track(Base):
     __tablename__ = 'tracks'
     id: Mapped[int] = mapped_column(primary_key=True)
 
-    telegram_reference: Mapped[Optional[dict]] = mapped_column(JSON)
     telegram_id: Mapped[Optional[int]] = mapped_column(BigInteger)
     telegram_access_hash: Mapped[Optional[int]] = mapped_column(BigInteger)
     telegram_file_reference: Mapped[Optional[bytes]] = mapped_column(LargeBinary)
@@ -24,13 +23,12 @@ class Track(Base):
     used_times: Mapped[int] = mapped_column(Integer, default=1)
 
     def __hash__(self):
-        return hash(self.spotify_id)
+        return hash(self.spotify_id or self.ymusic_id)
 
     def __eq__(self, other):
         if not isinstance(other, Track):
             return NotImplemented
-        return self.spotify_id == other.spotify_id
-
+        return (self.spotify_id or self.ymusic_id) == (other.spotify_id or other.spotify_id)
 
 
 __all__ = ['Track']

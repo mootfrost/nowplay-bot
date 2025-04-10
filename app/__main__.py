@@ -1,6 +1,6 @@
 import asyncio
-
 from app import main
+
 
 async def run():
     await main()

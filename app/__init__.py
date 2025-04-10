@@ -11,6 +11,7 @@ from telethon.tl.types import (
     DocumentAttributeAudio,
     InputPeerSelf, InputDocument
 )
+from telethon.tl.custom import InlineBuilder
 from telethon import functions
 from telethon.utils import get_input_document
 import urllib.parse
@@ -81,8 +82,8 @@ async def fetch_file(url) -> bytes:
             return await response.read()
 
 
-def get_track_links(track_id) -> str:
-    return f'<a href="https://open.spotify.com/track/{track_id}">Spotify</a> | <a href="https://song.link/s/{track_id}">Other</a>'
+def get_songlink(track_id) -> str:
+    return f'<a href="https://song.link/s/{track_id}">Other</a>'
 
 
 # TODO: make faster and somehow fix cover not displaying in response
@@ -103,7 +104,7 @@ async def update_dummy_file_cover(cover_url: str):
     dummy_file = await client.upload_file(res.getvalue(), file_name='empty.mp3')
 
 
-async def build_response(e: events.InlineQuery.Event, track: Track):
+async def build_response(track: Track, track_id: str, links: str):
     if not track.telegram_id:
         dummy_file = await client.upload_file('empty.mp3')
         buttons = [Button.inline('Loading', 'loading')]
@@ -114,11 +115,11 @@ async def build_response(e: events.InlineQuery.Event, track: Track):
             file_reference=track.telegram_file_reference
         )
         buttons = None
-    return e.builder.document(
+    return await InlineBuilder(client).document(
         file=dummy_file,
         title=track.name,
         description=track.artist,
-        id=track.spotify_id,
+        id=track_id,
         mime_type='audio/mpeg',
         attributes=[
             DocumentAttributeAudio(
@@ -129,21 +130,22 @@ async def build_response(e: events.InlineQuery.Event, track: Track):
                 waveform=None,
             )
         ],
-        text=get_track_links(track.spotify_id),
+        text=links,
         buttons=buttons
     )
 
 
 @client.on(events.InlineQuery())
 async def query_list(e: events.InlineQuery.Event):
-    context = MusicProviderContext(SpotifyStrategy(e.sender_id))
-    tracks = (await context.get_tracks())[:5]
+    ctx = MusicProviderContext(YandexMusicStrategy(e.sender_id))
+    tracks = (await ctx.get_tracks())[:5]
     result = []
 
     for track in tracks:
-        track = await context.get_cached_track(track)
-        cache[track.spotify_id] = track
-        result.append(await build_response(e, track))
+        track = await ctx.get_cached_track(track)
+        music_id = ctx.strategy.track_id(track)
+        cache[music_id] = track
+        result.append(await build_response(track, music_id, ctx.strategy.song_link(track)))
     await e.answer(result)
 
 
@@ -217,7 +219,7 @@ async def send_track(e: UpdateBotInlineSend):
         return
 
     file = await download_track(track)
-    await client.edit_message(e.msg_id, file=file, text=get_track_links(e.id))
+    await client.edit_message(e.msg_id, file=file)
 
 
 async def main():

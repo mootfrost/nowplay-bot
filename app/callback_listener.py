@@ -12,6 +12,7 @@ import jwt
 from app.dependencies import get_session
 from app.models.user import User
 from config import config, OauthCreds
+from app.MusicProvider.auth import get_oauth_creds
 
 client = TelegramClient('nowplaying_callback', config.api_id, config.api_hash)
 
@@ -65,12 +66,7 @@ def get_decoded_id(string: str):
 async def spotify_callback(code: str, state: str, session: AsyncSession = Depends(get_session)):
     user_id = get_decoded_id(state)
     token, refresh_token, expires_in = await code_to_token(code, 'https://accounts.spotify.com/api/token', config.spotify)
-    creds = {
-        'access_token': token,
-        'refresh_token': refresh_token,
-        'refresh_at': int(time.time()) + expires_in
-    }
-
+    creds = get_oauth_creds(token, refresh_token, expires_in)
     user = await session.get(User, user_id)
     if user:
         user.spotify_auth = creds
@@ -88,11 +84,7 @@ async def spotify_callback(code: str, state: str, session: AsyncSession = Depend
 async def ym_callback(state: str, code: str, cid: str, session: AsyncSession = Depends(get_session)):
     user_id = get_decoded_id(state)
     token, refresh_token, expires_in = await code_to_token(code, 'https://oauth.yandex.com/token', config.ymusic)
-    creds = {
-        'access_token': token,
-        'refresh_token': refresh_token,
-        'refresh_at': int(time.time()) + expires_in
-    }
+    creds = get_oauth_creds(token, refresh_token, expires_in)
     user = await session.get(User, user_id)
     if user:
         user.ymusic_auth = creds

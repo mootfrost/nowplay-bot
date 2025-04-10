@@ -18,3 +18,11 @@ class MusicProviderStrategy(ABC):
     @abstractmethod
     async def fetch_track(self, track: Track) -> Track:
         pass
+
+    @abstractmethod
+    def song_link(self, track: Track):
+        pass
+
+    @abstractmethod
+    def track_id(self, track: Track):
+        pass

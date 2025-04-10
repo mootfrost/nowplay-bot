@@ -1,42 +1,15 @@
 import asyncio
-import base64
 import time
 
 import aiohttp
 
 from app.config import config
 from app.MusicProvider.Strategy import MusicProviderStrategy
-from app.dependencies import get_session, get_session_context
+from app.dependencies import get_session_context
 from sqlalchemy import select, update
 
 from app.models import User, Track
-
-
-def convert_track(track: dict):
-    if track['type'] != 'track':
-        return None
-
-    return Track(
-        name=track['name'],
-        artist=', '.join(x['name'] for x in track['artists']),
-        cover_url=track['album']['images'][0]['url'],
-        spotify_id=track['id']
-    )
-
-
-async def refresh_token(refresh_token):
-    token_headers = {
-        "Content-Type": "application/x-www-form-urlencoded",
-        'Authorization': 'Basic ' + config.spotify.encoded
-    }
-    token_data = {
-        "grant_type": "refresh_token",
-        "refresh_token": refresh_token
-    }
-    async with aiohttp.ClientSession() as session:
-        resp = await session.post("https://accounts.spotify.com/api/token", data=token_data, headers=token_headers)
-    resp = await resp.json()
-    return resp['access_token'], resp['expires_in']
+from app.MusicProvider.auth import refresh_token, get_oauth_creds
 
 
 class SpotifyStrategy(MusicProviderStrategy):
@@ -54,11 +27,15 @@ class SpotifyStrategy(MusicProviderStrategy):
         if int(time.time()) < user.spotify_auth['refresh_at']:
             return user.spotify_auth['access_token']
 
-        token, expires_in = await refresh_token(user.spotify_auth['refresh_token'])
+        token, expires_in = await refresh_token('https://accounts.spotify.com/api/token',
+                                                user.spotify_auth['refresh_token'],
+                                                config.spotify.encoded
+                                                )
         async with get_session_context() as session:
             await session.execute(
-                update(User).where(User.id == self.user_id).values(spotify_access_token=token,
-                                                                   spotify_refresh_at=int(time.time()) + int(expires_in))
+                update(User).where(User.id == self.user_id).values(spotify_auth=get_oauth_creds(token,
+                                                                                                user.spotify_auth['refresh_token'],
+                                                                                                expires_in))
             )
             await session.commit()
         return token
@@ -74,6 +51,18 @@ class SpotifyStrategy(MusicProviderStrategy):
                 return None
             return await resp.json()
 
+    @staticmethod
+    def convert_track(track: dict):
+        if track['type'] != 'track':
+            return None
+
+        return Track(
+            name=track['name'],
+            artist=', '.join(x['name'] for x in track['artists']),
+            cover_url=track['album']['images'][0]['url'],
+            spotify_id=track['id']
+        )
+
     async def get_tracks(self, token) -> list[Track]:
         current, recent = await asyncio.gather(
             self.request('/me/player/currently-playing', token),
@@ -81,9 +70,9 @@ class SpotifyStrategy(MusicProviderStrategy):
         )
         tracks = []
         if current:
-            tracks.append(convert_track(current['item']))
+            tracks.append(self.convert_track(current['item']))
         for item in recent['items']:
-            tracks.append(convert_track(item['track']))
+            tracks.append(self.convert_track(item['track']))
 
         tracks = [x for x in tracks if x]
         tracks = list(dict.fromkeys(tracks))
@@ -96,6 +85,12 @@ class SpotifyStrategy(MusicProviderStrategy):
                 select(Track).where(Track.spotify_id == track.spotify_id)
             )
         return resp.scalars().first()
+
+    def song_link(self, track: Track):
+        return f'<a href="https://open.spotify.com/track/{track.spotify_id}">Spotify</a> | <a href="https://song.link/s/{track.spotify_id}">Other</a>'
+
+    def track_id(self, track: Track):
+        return track.spotify_id
 
 
 __all__ = ['SpotifyStrategy']
