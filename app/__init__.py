@@ -76,7 +76,12 @@ async def start(e: events.NewMessage.Event):
         Button.url('Link Spotify', get_spotify_link(enc_user_id)),
         Button.url('Link Yandex music', get_ymusic_link(enc_user_id)),
     ]
-    await e.respond("Hi! I can help you share music you listen on Spotify or Yandex muisc\n\nPress button below to authorize your account first",
+    await e.respond("""Hi! I can help you share music you listen on Spotify or Yandex music.
+To use just type @now_listening_bot and select track.
+
+Press button below to authorize your account first
+
+""",
                     buttons=buttons)
 
 

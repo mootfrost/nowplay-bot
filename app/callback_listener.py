@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 from telethon import TelegramClient
@@ -15,6 +15,7 @@ from config import config, OauthCreds
 from app.MusicProvider.auth import get_oauth_creds
 
 client = TelegramClient('nowplaying_callback', config.api_id, config.api_hash)
+client.parse_mode = 'html'
 
 
 @asynccontextmanager
@@ -34,7 +35,7 @@ class LinkException(Exception):
 
 @app.exception_handler(LinkException)
 async def link_exception_handler(request: Request, exc: LinkException):
-    return FileResponse('static/error.html', status_code=400)
+    return FileResponse('app/static/error.html', media_type='text/html')
 
 
 async def code_to_token(code: str, uri: str, creds: OauthCreds) -> tuple[str, str, int]:
@@ -61,6 +62,12 @@ def get_decoded_id(string: str):
     except:
         raise LinkException()
 
+second_provider_notification = """
+\n\nYou just added second service, it will be used as default.
+If you want to use other one time just type <b>y for Yandex music</b>. or <b>s for Spotify</b>. 
+You can change default service using /default command.
+"""
+
 
 @app.get('/spotify_callback')
 async def spotify_callback(code: str, state: str, session: AsyncSession = Depends(get_session)):
@@ -78,8 +85,12 @@ async def spotify_callback(code: str, state: str, session: AsyncSession = Depend
                     )
         session.add(user)
     await session.commit()
-    await client.send_message(user_id, "Account linked!")
-    return FileResponse('static/success.html', media_type='text/html')
+    reply = "Account linked!"
+    if user.spotify_auth:
+        reply += second_provider_notification
+    await client.send_message(user_id, reply)
+    return FileResponse('app/static/success.html', media_type='text/html')
+
 
 
 @app.get('/ym_callback')
@@ -98,8 +109,11 @@ async def ym_callback(state: str, code: str, cid: str, session: AsyncSession = D
                     )
         session.add(user)
     await session.commit()
-    await client.send_message(user_id, "Account linked!")
-    return FileResponse('static/success.html', media_type='text/html')
+    reply = "Account linked! Note, that currently bot only allows to share tracks from Liked playlist."
+    if user.spotify_auth:
+        reply += second_provider_notification
+    await client.send_message(user_id, reply)
+    return FileResponse('app/static/success.html', media_type='text/html')
 
 
 if __name__ == '__main__':

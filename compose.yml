@@ -7,7 +7,7 @@ services:
       - .env.production
     restart: unless-stopped
     command: >
-      sh -c "ls && python -m alembic upgrade head && python app/__main__.py"
+      sh -c "python -m alembic upgrade head && python app/__main__.py"
 
 
   callback_listener:
