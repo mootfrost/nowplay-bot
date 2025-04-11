@@ -77,7 +77,7 @@ async def start(e: events.NewMessage.Event):
         Button.url('Link Yandex music', get_ymusic_link(enc_user_id)),
     ]
     await e.respond("""Hi! I can help you share music you listen on Spotify or Yandex music.
-To use just type @now_listening_bot and select track.
+To use just type @listensharebot and select track.
 
 Press button below to authorize your account first
 
@@ -103,7 +103,7 @@ async def change_default(e: events.NewMessage.Event):
 async def set_default(e: events.CallbackQuery.Event):
     async with get_session_context() as session:
         await session.execute(
-            update(User).where(User.id == e.sender_id).values(default=str(e.data).split('_')[1])
+            update(User).where(User.id == e.sender_id).values(default=str(e.data).split('_')[1][:-1])
         )
         await session.commit()
     await e.respond('Default service updated')
