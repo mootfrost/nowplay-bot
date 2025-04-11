@@ -11,8 +11,9 @@ wheels/
 
 # other
 .idea
-.env
+.env*
 *.session
 *.session-journal
 oauth.json
 resp.json
+pgdata

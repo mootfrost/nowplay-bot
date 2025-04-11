@@ -4,7 +4,7 @@ services:
     image: nowplaybot
     build: .
     env_file:
-      - .env
+      - .env.production
     restart: unless-stopped
     command: >
       sh -c "ls && python -m alembic upgrade head && python app/__main__.py"
@@ -13,9 +13,20 @@ services:
   callback_listener:
     <<: *bot
     ports:
-      - 8080:8080
+      - "8080:8080"
     labels:
       - traefik.enable=true
       - traefik.http.routers.music_mootfrost_dev.rule=Host(`music.mootfrost.dev`)
       - traefik.http.services.music_mootfrost_dev.loadbalancer.server.port=8080
     command: python app/callback_listener.py
+
+  db:
+    image: postgres:17.4-alpine
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data/pgdata
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: owl
+      POSTGRES_DB: nowplaybot
+      PGDATA: /var/lib/postgresql/data/pgdata

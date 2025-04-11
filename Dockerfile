@@ -12,11 +12,12 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --frozen --no-install-project
 
-ADD ./app /app/app
-ADD uv.lock /app/
-ADD pyproject.toml /app/
-ADD ./alembic /app/alembic
-ADD alembic.ini /app
+COPY ./app /app/app
+COPY uv.lock /app/
+COPY pyproject.toml /app/
+COPY ./alembic /app/alembic
+COPY alembic.ini /app
+COPY oauth.json /app/
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-editable
@@ -30,4 +31,5 @@ RUN apk add --no-cache ffmpeg
 
 COPY --from=builder --chown=app:app /app /app
 ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONPATH="/app"
 WORKDIR /app
