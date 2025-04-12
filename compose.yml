@@ -5,11 +5,9 @@ services:
     build: .
     env_file:
       - .env.production
-    volumes:
-      - ./oauth.json:/app/oauth.json
     restart: unless-stopped
     command: >
-      sh -c "python -m alembic upgrade head && python app/__main__.py"
+      sh -c "echo $OAUTH_JSON > /app/oauth.json && python -m alembic upgrade head && python app/__main__.py"
 
 
   callback_listener:

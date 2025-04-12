@@ -20,13 +20,10 @@ jobs:
           source .env.production
           set +o allexport
 
-      - name: Load oauth.json
-        run: |
-          echo "${{ vars.OAUTH_JSON }}" > oauth.json
-
       - name: Docker Compose Up
+        env:
+          OAUTH_JSON: ${{ vars.OAUTH_JSON }}
         run: |
-          pwd
-          docker compose down
           docker compose build bot
+          docker compose down
           docker compose up -d
