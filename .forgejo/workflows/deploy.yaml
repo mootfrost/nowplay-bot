@@ -26,7 +26,7 @@ jobs:
 
       - name: Docker Compose Up
         run: |
-          ls
+          pwd
           docker compose down
           docker compose build bot
           docker compose up -d
