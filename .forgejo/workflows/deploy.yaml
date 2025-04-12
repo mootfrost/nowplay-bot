@@ -23,9 +23,6 @@ jobs:
       - name: Load oauth.json
         run: |
           echo "${{ secrets.SECRET_OAUTH_JSON }}" > oauth.json
-          set -o allexport
-          source oauth.json
-          set +o allexport
 
       - name: Docker Compose Up
         run: |
