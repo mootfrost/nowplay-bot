@@ -17,7 +17,6 @@ COPY uv.lock /app/
 COPY pyproject.toml /app/
 COPY ./alembic /app/alembic
 COPY alembic.ini /app
-COPY oauth.json /app/
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-editable
