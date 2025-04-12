@@ -20,7 +20,7 @@ services:
       - traefik.enable=true
       - traefik.http.routers.music_mootfrost_dev.rule=Host(`music.mootfrost.dev`)
       - traefik.http.services.music_mootfrost_dev.loadbalancer.server.port=8080
-    command: python app/callback_listener.py
+    command: sh -c "echo '${OAUTH_JSON}' | base64 -d > /app/oauth.json && python app/callback_listener.py"
 
   db:
     image: postgres:17.4-alpine
