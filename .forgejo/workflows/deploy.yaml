@@ -27,5 +27,4 @@ jobs:
       - name: Docker Compose Up
         run: |
           docker compose build bot
-          docker compose pull
           docker compose up -d
