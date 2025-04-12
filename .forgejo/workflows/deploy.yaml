@@ -1,0 +1,26 @@
+name: Deploy Service
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: runner_s4
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Load environment variables
+        run: |
+          echo "${{ secrets.SECRET_ENV_FILE }}" > .env.production
+          set -o allexport
+          source .env.production
+          set +o allexport
+
+      - name: Docker Compose Up
+        run: |
+          docker-compose pull
+          docker-compose up -d --build
