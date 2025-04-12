@@ -24,6 +24,6 @@ jobs:
         env:
           OAUTH_JSON: ${{ vars.OAUTH_JSON }}
         run: |
-          docker compose build bot
           docker compose down
+          docker compose build bot
           docker compose up -d
