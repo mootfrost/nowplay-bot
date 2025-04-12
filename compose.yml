@@ -1,7 +1,7 @@
 services:
   bot:
     &bot
-    image: nowplaybot
+    image: nowplaybot:latest
     build: .
     env_file:
       - .env.production
