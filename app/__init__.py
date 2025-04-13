@@ -170,7 +170,7 @@ async def query_list(e: events.InlineQuery.Event):
     user = await get_user(e.sender_id)
     if not user:
         return await e.answer(switch_pm='Link account first', switch_pm_param='link')
-    if user.default == 'spotify' and user.spotify_auth:
+    if user.spotify_auth and (str(e.text) == 's' or user.default == 'spotify' and not str(e.text)):
         ctx = MusicProviderContext(SpotifyStrategy(e.sender_id))
     else:
         ctx = MusicProviderContext(YandexMusicStrategy(e.sender_id))
