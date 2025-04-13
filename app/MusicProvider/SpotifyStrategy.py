@@ -29,7 +29,8 @@ class SpotifyStrategy(MusicProviderStrategy):
 
         token, expires_in = await refresh_token('https://accounts.spotify.com/api/token',
                                                 user.spotify_auth['refresh_token'],
-                                                config.spotify.encoded
+                                                config.spotify.encoded,
+                                                config.proxy
                                                 )
         async with get_session_context() as session:
             await session.execute(
@@ -45,7 +46,7 @@ class SpotifyStrategy(MusicProviderStrategy):
             'Authorization': 'Bearer ' + token,
             'Content-Type': 'application/json'
         }
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(proxy=config.proxy) as session:
             resp = await session.get(f'https://api.spotify.com/v1{endpoint}', headers=user_headers)
             if resp.status != 200:
                 return None

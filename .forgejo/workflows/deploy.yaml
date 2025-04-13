@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: s4_docker
+    runs-on: s3_docker
 
     steps:
       - name: Check out code

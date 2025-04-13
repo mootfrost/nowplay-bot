@@ -32,8 +32,8 @@ class YandexMusicStrategy(MusicProviderStrategy):
 
         token, expires_in = await refresh_token('https://oauth.yandex.com/token',
                                                 user.ymusic_auth['refresh_token'],
-                                                config.ymusic.encoded,
-                                                config.proxy)
+                                                config.ymusic.encoded
+                                                )
         async with get_session_context() as session:
             await session.execute(
                 update(User).where(User.id == self.user_id).values(spotify_auth=get_oauth_creds(token,
@@ -44,10 +44,10 @@ class YandexMusicStrategy(MusicProviderStrategy):
         return token
 
     async def get_tracks(self, token) -> list[Track]:
-        if config.proxy:
-            client = ClientAsync(token, request=Request(proxy_url=config.proxy))
-        else:
-            client = await ClientAsync(token).init()
+        # if config.proxy:
+        #     client = ClientAsync(token, request=Request(proxy_url=config.proxy))
+        # else:
+        client = await ClientAsync(token).init()
         liked: TracksList = await client.users_likes_tracks()
         tracks = await client.tracks([x.id for x in liked.tracks[:5]])
         print(tracks[0])
