@@ -32,3 +32,5 @@ COPY --from=builder --chown=app:app /app /app
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONPATH="/app"
 WORKDIR /app
+
+RUN yt-dlp -U
