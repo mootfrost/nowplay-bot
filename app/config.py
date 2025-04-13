@@ -31,6 +31,7 @@ class Config(BaseSettings):
     ymusic: OauthCreds
 
     proxy: str | None
+    socks_proxy: str | None
     jwt_secret: str
 
 

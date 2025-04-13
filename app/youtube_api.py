@@ -27,7 +27,7 @@ def _download(yt_id: str, directory: str):
         'outtmpl': os.path.join(directory, 'dl.%(ext)s'),
     }
     if config.proxy:
-        params['proxy'] = config.proxy
+        params['proxy'] = config.socks_proxy
     with YoutubeDL(params) as ydl:
         return ydl.extract_info(yt_id)
 
