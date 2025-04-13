@@ -11,7 +11,7 @@ def get_oauth_creds(token, refresh_token, expires_in):
     }
 
 
-async def refresh_token(endpoint, refresh_token, creds):
+async def refresh_token(endpoint, refresh_token, creds, proxy=None):
     token_headers = {
         "Content-Type": "application/x-www-form-urlencoded",
         'Authorization': 'Basic ' + creds
@@ -20,7 +20,7 @@ async def refresh_token(endpoint, refresh_token, creds):
         "grant_type": "refresh_token",
         "refresh_token": refresh_token
     }
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(proxy=proxy) as session:
         resp = await session.post(endpoint, data=token_data, headers=token_headers)
     resp = await resp.json()
     return resp['access_token'], resp['expires_in']

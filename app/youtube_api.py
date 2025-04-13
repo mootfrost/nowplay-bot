@@ -10,8 +10,8 @@ from app.config import config
 
 ytmusic = YTMusic('oauth.json',
                   oauth_credentials=OAuthCredentials(client_id=config.yt.client_id, client_secret=config.yt.client_secret))
-if config.proxy:
-    ytmusic.proxies = {'http': config.proxy, 'https': config.proxy}
+# if config.proxy:
+#     ytmusic.proxies = {'http': config.proxy, 'https': config.proxy}
 
 
 def name_to_youtube(name: str):
@@ -26,8 +26,8 @@ def _download(yt_id: str, directory: str):
         'quiet': True,
         'outtmpl': os.path.join(directory, 'dl.%(ext)s'),
     }
-    if config.proxy:
-        params['proxy'] = config.proxy
+    # if config.proxy:
+    #     params['proxy'] = config.proxy
     with YoutubeDL(params) as ydl:
         return ydl.extract_info(yt_id)
 

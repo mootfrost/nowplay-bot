@@ -38,7 +38,7 @@ async def link_exception_handler(request: Request, exc: LinkException):
     return FileResponse('app/static/error.html', media_type='text/html')
 
 
-async def code_to_token(code: str, uri: str, creds: OauthCreds) -> tuple[str, str, int]:
+async def code_to_token(code: str, uri: str, creds: OauthCreds, proxy=None) -> tuple[str, str, int]:
     token_headers = {
         "Authorization": "Basic " + creds.encoded,
         "Content-Type": "application/x-www-form-urlencoded"
@@ -48,7 +48,7 @@ async def code_to_token(code: str, uri: str, creds: OauthCreds) -> tuple[str, st
         "code": code,
         "redirect_uri": creds.redirect
     }
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(proxy=proxy) as session:
         resp = await session.post(uri, data=token_data, headers=token_headers)
     resp = await resp.json()
     if 'access_token' not in resp:
@@ -96,7 +96,7 @@ async def spotify_callback(code: str, state: str, session: AsyncSession = Depend
 @app.get('/ym_callback')
 async def ym_callback(state: str, code: str, cid: str, session: AsyncSession = Depends(get_session)):
     user_id = get_decoded_id(state)
-    token, refresh_token, expires_in = await code_to_token(code, 'https://oauth.yandex.com/token', config.ymusic)
+    token, refresh_token, expires_in = await code_to_token(code, 'https://oauth.yandex.com/token', config.ymusic, config.proxy)
     creds = get_oauth_creds(token, refresh_token, expires_in)
     user = await session.get(User, user_id)
     if user:
