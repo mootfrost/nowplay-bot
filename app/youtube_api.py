@@ -15,7 +15,7 @@ if config.proxy:
 
 
 def name_to_youtube(name: str):
-    results = ytmusic.search(name, 'songs', limit=5)
+    results = ytmusic.search(name, 'videos', limit=5)
     print(results[0])
     return results[0]['videoId']
 
@@ -24,7 +24,7 @@ def _download(yt_id: str, directory: str):
     params = {
         'format': 'bestaudio',
         'quiet': True,
-        'outtmpl': os.path.join(directory, 'dl.%(ext)s'),
+        'outtmpl': os.path.join(directory, 'dl.%(ext)s')
     }
     if config.socks_proxy:
         params['proxy'] = config.socks_proxy
