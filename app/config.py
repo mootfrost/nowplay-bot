@@ -30,8 +30,8 @@ class Config(BaseSettings):
     yt: GoogleApiCreds
     ymusic: OauthCreds
 
-    proxy: str | None
-    socks_proxy: str | None
+    proxy: str | None = None
+    socks_proxy: str | None = None
     jwt_secret: str
 
 
