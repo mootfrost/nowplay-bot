@@ -7,7 +7,7 @@ from sqlalchemy import BigInteger, LargeBinary, Integer, JSON
 
 class Track(Base):
     __tablename__ = 'tracks'
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
 
     telegram_id: Mapped[Optional[int]] = mapped_column(BigInteger)
     telegram_access_hash: Mapped[Optional[int]] = mapped_column(BigInteger)
