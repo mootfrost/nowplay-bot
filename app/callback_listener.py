@@ -1,3 +1,4 @@
+import urllib.parse
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 import uvicorn
 from telethon import TelegramClient
 import aiohttp
-import time
+from pydantic import BaseModel
 import jwt
 
 from app.dependencies import get_session
@@ -69,7 +70,44 @@ You can change default service using /default command.
 """
 
 
-@app.get('/spotify_callback')
+def get_spotify_link(client_id, state) -> str:
+    params = {
+        'client_id': client_id,
+        'response_type': 'code',
+        'redirect_uri': config.spotify.redirect,
+        'scope': 'user-read-recently-played user-read-currently-playing',
+        'state': state
+    }
+    return f"https://accounts.spotify.com/authorize?{urllib.parse.urlencode(params)}"
+
+
+class SpotifyAuthorizeRequest(BaseModel):
+    client_id: str
+    client_secret: str
+    state: str
+
+
+@app.post('/spotify/authorize')
+async def spotify_authorize(data: SpotifyAuthorizeRequest, session: AsyncSession = Depends(get_session)):
+    user_id = get_decoded_id(data.state)
+    creds = {
+        'client_id': data.client_id,
+        'client_secret': data.client_secret
+    }
+    user = await session.get(User, user_id)
+    if user:
+        user.spotify_auth = creds
+    else:
+        user = User(id=user_id,
+                    spotify_auth=creds,
+                    default='spotify'
+                    )
+        session.add(user)
+    await session.commit()
+    return {'redirect_url': get_spotify_link(data.client_id, client.state)}
+
+
+@app.get('/spotify/callback')
 async def spotify_callback(code: str, state: str, session: AsyncSession = Depends(get_session)):
     user_id = get_decoded_id(state)
     token, refresh_token, expires_in = await code_to_token(code, 'https://accounts.spotify.com/api/token', config.spotify)
@@ -93,7 +131,7 @@ async def spotify_callback(code: str, state: str, session: AsyncSession = Depend
 
 
 
-@app.get('/ym_callback')
+@app.get('/ym/callback')
 async def ym_callback(state: str, code: str, cid: str, session: AsyncSession = Depends(get_session)):
     user_id = get_decoded_id(state)
     token, refresh_token, expires_in = await code_to_token(code, 'https://oauth.yandex.com/token', config.ymusic, config.proxy)

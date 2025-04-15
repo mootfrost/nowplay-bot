@@ -47,13 +47,9 @@ async def get_user(user_id):
 
 def get_spotify_link(user_id) -> str:
     params = {
-        'client_id': config.spotify.client_id,
-        'response_type': 'code',
-        'redirect_uri': config.spotify.redirect,
-        'scope': 'user-read-recently-played user-read-currently-playing',
         'state': user_id
     }
-    return f"https://accounts.spotify.com/authorize?{urllib.parse.urlencode(params)}"
+    return f"https://music.mootfrost.dev/spotify/authorize?{urllib.parse.urlencode(params)}"
 
 
 def get_ymusic_link(user_id) -> str:
@@ -69,7 +65,7 @@ def get_ymusic_link(user_id) -> str:
 async def start(e: events.NewMessage.Event):
     payload = {
         'tg_id': e.chat_id,
-        'exp': int(time.time()) + 300
+        'exp': int(time.time()) + 900
     }
     enc_user_id = jwt.encode(payload, config.jwt_secret, algorithm='HS256')
     buttons = [
