@@ -27,6 +27,8 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data/pgdata
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:5431:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: owl
