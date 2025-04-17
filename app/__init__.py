@@ -19,7 +19,7 @@ import urllib.parse
 from mutagen.id3 import ID3, APIC
 import logging
 from cachetools import LRUCache
-from sqlalchemy import select, update
+from sqlalchemy import select, update, delete
 import jwt
 
 
@@ -103,6 +103,20 @@ async def set_default(e: events.CallbackQuery.Event):
         )
         await session.commit()
     await e.respond("Default service updated")
+
+
+@client.on(events.NewMessage(pattern='/logout'))
+async def confirm_logout(e: events.NewMessage.Event):
+    await e.respond('This action will delete all your data. Continue?', buttons=[Button.inline('Yes', 'confirm_logout')])
+
+
+@client.on(events.CallbackQuery(pattern='confirm_logout'))
+async def logout(e: events.CallbackQuery.Event):
+    async with get_session_context() as session:
+        await session.execute(
+            delete(User).where(User.id == e.sender_id)
+        )
+    await e.respond('Logged out successfully. Use /start to continue using the bot')
 
 
 async def fetch_file(url) -> bytes:

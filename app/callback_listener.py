@@ -125,7 +125,7 @@ async def spotify_callback(
         user = User(id=data['tg_id'], spotify_auth=creds, default="spotify")
         session.add(user)
     reply = "Account linked!"
-    if user.spotify_auth:
+    if user.ymusic_auth:
         reply += second_provider_notification
     await client.send_message(data['tg_id'], reply)
     return FileResponse("app/static/success.html", media_type="text/html")
