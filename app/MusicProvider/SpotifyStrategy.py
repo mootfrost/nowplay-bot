@@ -9,7 +9,7 @@ from app.dependencies import get_session_context
 from sqlalchemy import select, update
 
 from app.models import User, Track
-from app.MusicProvider.auth import refresh_token, get_oauth_creds
+from app.MusicProvider.auth import refresh_token, get_oauth_creds, get_encoded_creds
 
 
 class SpotifyStrategy(MusicProviderStrategy):
@@ -24,56 +24,59 @@ class SpotifyStrategy(MusicProviderStrategy):
         if not user:
             return None
 
-        if int(time.time()) < user.spotify_auth['refresh_at']:
-            return user.spotify_auth['access_token']
+        if int(time.time()) < user.spotify_auth["refresh_at"]:
+            return user.spotify_auth["access_token"]
 
-        token, expires_in = await refresh_token('https://accounts.spotify.com/api/token',
-                                                user.spotify_auth['refresh_token'],
-                                                config.spotify.encoded,
-                                                config.proxy
-                                                )
+        token, expires_in = await refresh_token(
+            "https://accounts.spotify.com/api/token",
+            user.spotify_auth["refresh_token"],
+            get_encoded_creds(
+                user.spotify_auth["client_id"], user.spotify_auth["client_secret"]
+            ),
+            config.proxy,
+        )
         async with get_session_context() as session:
-            await session.execute(
-                update(User).where(User.id == self.user_id).values(spotify_auth=get_oauth_creds(token,
-                                                                                                user.spotify_auth['refresh_token'],
-                                                                                                expires_in))
+            user = await session.get(User, self.user_id)
+            user.spotify_auth.update(
+                get_oauth_creds(token, user.spotify_auth["refresh_token"], expires_in)
             )
-            await session.commit()
         return token
 
     async def request(self, endpoint, token):
         user_headers = {
-            'Authorization': 'Bearer ' + token,
-            'Content-Type': 'application/json'
+            "Authorization": "Bearer " + token,
+            "Content-Type": "application/json",
         }
         async with aiohttp.ClientSession(proxy=config.proxy) as session:
-            resp = await session.get(f'https://api.spotify.com/v1{endpoint}', headers=user_headers)
+            resp = await session.get(
+                f"https://api.spotify.com/v1{endpoint}", headers=user_headers
+            )
             if resp.status != 200:
                 return None
             return await resp.json()
 
     @staticmethod
     def convert_track(track: dict):
-        if track['type'] != 'track':
+        if track["type"] != "track":
             return None
 
         return Track(
-            name=track['name'],
-            artist=', '.join(x['name'] for x in track['artists']),
-            cover_url=track['album']['images'][0]['url'],
-            spotify_id=track['id']
+            name=track["name"],
+            artist=", ".join(x["name"] for x in track["artists"]),
+            cover_url=track["album"]["images"][0]["url"],
+            spotify_id=track["id"],
         )
 
     async def get_tracks(self, token) -> list[Track]:
         current, recent = await asyncio.gather(
-            self.request('/me/player/currently-playing', token),
-            self.request('/me/player/recently-played', token)
+            self.request("/me/player/currently-playing", token),
+            self.request("/me/player/recently-played", token),
         )
         tracks = []
         if current:
-            tracks.append(self.convert_track(current['item']))
-        for item in recent['items']:
-            tracks.append(self.convert_track(item['track']))
+            tracks.append(self.convert_track(current["item"]))
+        for item in recent["items"]:
+            tracks.append(self.convert_track(item["track"]))
 
         tracks = [x for x in tracks if x]
         tracks = list(dict.fromkeys(tracks))
@@ -94,4 +97,4 @@ class SpotifyStrategy(MusicProviderStrategy):
         return track.spotify_id
 
 
-__all__ = ['SpotifyStrategy']
+__all__ = ["SpotifyStrategy"]

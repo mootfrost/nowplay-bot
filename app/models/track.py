@@ -6,7 +6,7 @@ from sqlalchemy import BigInteger, LargeBinary, Integer, JSON
 
 
 class Track(Base):
-    __tablename__ = 'tracks'
+    __tablename__ = "tracks"
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
 
     telegram_id: Mapped[Optional[int]] = mapped_column(BigInteger)
@@ -28,7 +28,9 @@ class Track(Base):
     def __eq__(self, other):
         if not isinstance(other, Track):
             return NotImplemented
-        return (self.spotify_id or self.ymusic_id) == (other.spotify_id or other.spotify_id)
+        return (self.spotify_id or self.ymusic_id) == (
+            other.spotify_id or other.spotify_id
+        )
 
 
-__all__ = ['Track']
+__all__ = ["Track"]

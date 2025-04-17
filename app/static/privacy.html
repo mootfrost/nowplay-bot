@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy Policy | NowPlaying Bot</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            background-color: #fff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border-radius: 8px;
+        }
+
+        h1, h2, h3 {
+            color: #111;
+        }
+
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <section>
+        <h1>Privacy Policy</h1>
+        <p><strong>Last updated:</strong> 2025.04.17</p>
+
+        <h2>1. Information We Collect</h2>
+        <p>When you connect your music accounts, we collect the following data:</p>
+        <h3>Spotify</h3>
+        <ul>
+            <li>App Client ID & Secret (used server-side for API access)</li>
+            <li>Access Token (to retrieve your recently played tracks)</li>
+        </ul>
+        <h3>Yandex Music</h3>
+        <ul>
+            <li>Yandex Token (used to retrieve your recently played tracks)</li>
+        </ul>
+        <p>We do <strong>not</strong> collect or store any other personal information.</p>
+
+        <h2>2. How We Use Your Data</h2>
+        <p>We use the collected tokens <strong>only</strong> to:</p>
+        <ul>
+            <li>Access your recently played or currently playing music</li>
+            <li>Generate a message or preview to share on Telegram</li>
+        </ul>
+        <p>We do <strong>not</strong> use your data for analytics, advertising, tracking, or any other purposes.</p>
+
+        <h2>3. Data Storage & Security</h2>
+        <ul>
+            <li>Tokens are stored securely and encrypted on our server.</li>
+            <li>We do <strong>not</strong> share your information with any third parties.</li>
+            <li>Only essential server processes have access to these tokens.</li>
+        </ul>
+
+        <h2>4. Data Retention</h2>
+        <ul>
+            <li>Tokens are retained only as long as you use the bot.</li>
+            <li>You can delete your stored data at any time by messaging the bot with the command <code>/logout</code>.</li>
+        </ul>
+
+        <h2>5. Third-Party Services</h2>
+        <p>We rely on the official APIs of:</p>
+        <ul>
+            <li><a href="https://www.spotify.com" target="_blank" rel="noopener noreferrer">Spotify</a></li>
+            <li><a href="https://music.yandex.com" target="_blank" rel="noopener noreferrer">Yandex Music</a></li>
+        </ul>
+        <p>Please review their respective privacy policies for more information on how they handle your data.</br>
+        We also comply with telegram <a href="https://telegram.org/privacy-tpa" target="_blank" rel="noopener noreferrer">Standard Privacy Policy for Bots and Mini Apps</a>.</p>
+        <h2>6. Your Rights</h2>
+        <p>You have the right to:</p>
+        <ul>
+            <li>Request access to your stored data</li>
+            <li>Revoke access at any time via Spotify or Yandex settings</li>
+            <li>Request permanent deletion of your data by messaging <code>/logout</code> to the bot</li>
+        </ul>
+    </section>
+</div>
+</body>
+</html>
