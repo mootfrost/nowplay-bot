@@ -1,7 +1,6 @@
-import base64
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import BaseModel
+from app.MusicProvider.auth import get_encoded_creds
 
 
 class OauthCreds(BaseModel):
@@ -11,7 +10,7 @@ class OauthCreds(BaseModel):
 
     @property
     def encoded(self) -> str:
-        return base64.b64encode(self.client_id.encode() + b':' + self.client_secret.encode()).decode("utf-8")
+        return get_encoded_creds(self.client_id, self.client_secret)
 
 
 class GoogleApiCreds(BaseModel):
@@ -20,21 +19,22 @@ class GoogleApiCreds(BaseModel):
 
 
 class Config(BaseSettings):
-    model_config = SettingsConfigDict(env_nested_delimiter='_',
-                                      env_nested_max_split=1)
+    model_config = SettingsConfigDict(env_nested_delimiter="_", env_nested_max_split=1)
+
     bot_token: str
     api_id: int
     api_hash: str
+
     db_string: str
-    spotify: OauthCreds
+
     yt: GoogleApiCreds
     ymusic: OauthCreds
 
-    proxy: str | None = None
-    socks_proxy: str | None = None
+    proxy: str
+    root_url: str
     jwt_secret: str
 
 
-config = Config(_env_file='.env')
+config = Config(_env_file=".env")
 
-__all__ = ['config', 'OauthCreds']
+__all__ = ["config", "OauthCreds"]

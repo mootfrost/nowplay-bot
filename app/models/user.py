@@ -7,7 +7,7 @@ from sqlalchemy import BigInteger
 
 
 class User(Base):
-    __tablename__ = 'users'
+    __tablename__ = "users"
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
 
     spotify_auth: Mapped[dict] = mapped_column(JSON, default={})
@@ -16,4 +16,4 @@ class User(Base):
     default: Mapped[str]
 
 
-__all__ = ['User']
+__all__ = ["User"]
