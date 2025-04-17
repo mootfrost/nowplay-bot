@@ -30,7 +30,7 @@ class Config(BaseSettings):
     yt: GoogleApiCreds
     ymusic: OauthCreds
 
-    proxy: str
+    proxy: str = ''
     root_url: str
     jwt_secret: str
 
