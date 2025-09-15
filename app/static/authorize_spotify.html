@@ -71,11 +71,18 @@
 </head>
 <body>
 
-<h1>Spotify API Setup</h1>
+<h1>One more step</h1>
 <ol>
     <li>Visit <a href="https://developer.spotify.com/dashboard" target="_blank">Spotify Developer Dashboard</a></li>
     <li>Log in and create an app</li>
-    <li>Fill any name and description. Set redirect url to: {{}}</li>
+    <li>Fill any name and description</li>
+    <li>
+        Set redirect url to:
+        <span id="redirectUrl" style="cursor: pointer; color: #2563eb; text-decoration: underline;" onclick="copyRedirectUrl()">
+        {{ redirect_url }}
+    </span>
+        (click to copy)
+    </li>
     <li>Copy your <strong>Client ID</strong> and <strong>Client Secret</strong></li>
 </ol>
 
@@ -84,9 +91,15 @@
 
 <label for="clientSecret">Client Secret</label>
 <input type="password" id="clientSecret" placeholder="Enter your Client Secret" />
-<input type="hidden" id="state" value="{{ Pin }}">
+<input type="hidden" id="state" value="{{ state }}">
 
 <button id="authorizeBtn" onclick="">Authorize</button>
+
+<div style="position: fixed; bottom: 20px; right: 20px; font-size: 0.85rem;">
+    <a href="/static/privacy.html" target="_blank" style="color: #2563eb; text-decoration: underline;">
+        How we use this data
+    </a>
+</div>
 <script>
     document.getElementById('authorizeBtn').addEventListener('click', async () => {
         const clientId = document.getElementById('clientId').value;
@@ -116,6 +129,12 @@
             alert('Something went wrong during authorization.');
         }
     });
+</script>
+<script>
+    function copyRedirectUrl() {
+        const text = document.getElementById('redirectUrl').innerText;
+        navigator.clipboard.writeText(text)
+    }
 </script>
 </body>
 </html>

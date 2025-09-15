@@ -11,7 +11,6 @@ from yandex_music import ClientAsync, TracksList
 from yandex_music.utils.request_async import Request
 
 
-
 class YandexMusicStrategy(MusicProviderStrategy):
     async def fetch_track(self, track: Track) -> Track:
         async with get_session_context() as session:
@@ -27,18 +26,23 @@ class YandexMusicStrategy(MusicProviderStrategy):
         if not user:
             return None
 
-        if int(time.time()) < user.ymusic_auth['refresh_at']:
-            return user.ymusic_auth['access_token']
+        if int(time.time()) < user.ymusic_auth["refresh_at"]:
+            return user.ymusic_auth["access_token"]
 
-        token, expires_in = await refresh_token('https://oauth.yandex.com/token',
-                                                user.ymusic_auth['refresh_token'],
-                                                config.ymusic.encoded
-                                                )
+        token, expires_in = await refresh_token(
+            "https://oauth.yandex.com/token",
+            user.ymusic_auth["refresh_token"],
+            config.ymusic.encoded,
+        )
         async with get_session_context() as session:
             await session.execute(
-                update(User).where(User.id == self.user_id).values(spotify_auth=get_oauth_creds(token,
-                                                                                                user.ymusic_auth['refresh_token'],
-                                                                                                expires_in))
+                update(User)
+                .where(User.id == self.user_id)
+                .values(
+                    spotify_auth=get_oauth_creds(
+                        token, user.ymusic_auth["refresh_token"], expires_in
+                    )
+                )
             )
             await session.commit()
         return token
@@ -54,9 +58,9 @@ class YandexMusicStrategy(MusicProviderStrategy):
         return [
             Track(
                 name=x.title,
-                artist=', '.join([art.name for art in x.artists]),
+                artist=", ".join([art.name for art in x.artists]),
                 ymusic_id=x.id,
-                cover_url=x.cover_uri
+                cover_url=x.cover_uri,
             )
             for x in tracks
         ]
