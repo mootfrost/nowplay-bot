@@ -33,4 +33,4 @@ ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONPATH="/app"
 WORKDIR /app
 
-RUN yt-dlp -U
+#RUN yt-dlp -U
