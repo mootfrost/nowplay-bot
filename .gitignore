@@ -17,3 +17,4 @@ wheels/
 oauth.json
 resp.json
 pgdata
+.direnv
