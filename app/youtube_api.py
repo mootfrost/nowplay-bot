@@ -21,19 +21,28 @@ ytmusic = YTMusic()
 
 
 def name_to_youtube(name: str):
-    results_songs = ytmusic.search(name, "songs", limit=5)
-    results_videos = ytmusic.search(name, "videos", limit=5)
+    results_songs = ytmusic.search(name, "songs", limit=10)
+    results_videos = ytmusic.search(name, "videos", limit=10)
 
-    results = results_songs + results_videos
     candidates = []
-    for r in results:
+    for r in results_songs + results_videos:
         title = r.get("title", "")
         artist = ", ".join([a["name"] for a in r.get("artists", [])]) if "artists" in r else ""
-        candidates.append(f"{title} {artist}".strip())
+        label = f"{title} {artist}".strip()
+        bias = 0
+        if r.get("videoType") in ("MUSIC_VIDEO_TYPE_OMV", "MUSIC_VIDEO_TYPE_ATV"):
+            bias = 5
+        candidates.append((label, r, bias))
 
-    best_label, best_score, best_data = process.extractOne(name, candidates, scorer=fuzz.token_set_ratio)
-    print(results[best_data])
-    return results[best_data].get("videoId")
+    best_score = -1
+    best_result = None
+    for label, data, bias in candidates:
+        score = fuzz.token_set_ratio(name, label) + bias
+        if score > best_score:
+            best_score = score
+            best_result = data
+    print(best_result)
+    return best_result.get("videoId") if best_result else None
 
 
 def _download(yt_id: str, directory: str):
