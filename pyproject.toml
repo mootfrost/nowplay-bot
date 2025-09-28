@@ -22,5 +22,5 @@ dependencies = [
     "uvicorn>=0.34.0",
     "yandex-music>=2.2.0",
     "yt-dlp>=2025.3.31",
-    "ytmusicapi>=1.10.3",
+    "ytmusicapi>=1.11.1",
 ]

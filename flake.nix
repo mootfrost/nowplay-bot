@@ -19,6 +19,7 @@
           pkgs.libffi
           pkgs.readline
           pkgs.postgresql.pg_config
+          pkgs.python313Packages.greenlet
         ];
 
         mkPythonShell = python: pkgs.mkShell {
