@@ -16,8 +16,8 @@ from app.config import config
 #     ),
 # )
 ytmusic = YTMusic()
-# if config.proxy:
-#     ytmusic.proxies = {'http': config.proxy, 'https': config.proxy}
+if config.proxy:
+    ytmusic.proxies = {'http': config.proxy, 'https': config.proxy}
 
 
 def name_to_youtube(name: str):
