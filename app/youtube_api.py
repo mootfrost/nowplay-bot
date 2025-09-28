@@ -50,9 +50,8 @@ def _download(yt_id: str, directory: str):
         "format": "bestaudio",
         "quiet": True,
         "outtmpl": os.path.join(directory, "dl.%(ext)s"),
+        "proxy": config.proxy
     }
-    if config.proxy:
-        params["proxy"] = config.proxy
     with YoutubeDL(params) as ydl:
         return ydl.extract_info(yt_id)
 
