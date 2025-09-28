@@ -226,7 +226,7 @@ async def cache_file(track):
 
 async def download_track(track):
     yt_id = await asyncio.get_event_loop().run_in_executor(
-        None, functools.partial(name_to_youtube, f"{track.name} - {track.artist}")
+        None, functools.partial(name_to_youtube, f"{track.name} {track.artist}")
     )
     track.yt_id = yt_id
     async with get_session_context() as session:

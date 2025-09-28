@@ -5,6 +5,7 @@ from io import BytesIO
 from tempfile import TemporaryDirectory
 from ytmusicapi import YTMusic, OAuthCredentials
 from yt_dlp import YoutubeDL
+from rapidfuzz import fuzz, process
 
 from app.config import config
 
@@ -20,9 +21,19 @@ ytmusic = YTMusic()
 
 
 def name_to_youtube(name: str):
-    results = ytmusic.search(name, "videos", limit=10)
-    print(results)
-    return results[0]["videoId"]
+    results_songs = ytmusic.search(name, "songs", limit=5)
+    results_videos = ytmusic.search(name, "videos", limit=5)
+
+    results = results_songs + results_videos
+    candidates = []
+    for r in results:
+        title = r.get("title", "")
+        artist = ", ".join([a["name"] for a in r.get("artists", [])]) if "artists" in r else ""
+        candidates.append(f"{title} {artist}".strip())
+
+    best_label, best_score, best_data = process.extractOne(name, candidates, scorer=fuzz.token_set_ratio)
+    print(results[best_data])
+    return results[best_data].get("videoId")
 
 
 def _download(yt_id: str, directory: str):
