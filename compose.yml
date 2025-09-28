@@ -8,7 +8,7 @@ services:
     environment:
       - OAUTH_JSON
     extra_hosts:
-      - "host.docker.internal:1080"
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
     command: >
       sh -c "echo '${OAUTH_JSON}' | base64 -d > /app/oauth.json && python -m alembic upgrade head && python app/__main__.py"
