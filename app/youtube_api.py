@@ -20,8 +20,8 @@ ytmusic = YTMusic()
 
 
 def name_to_youtube(name: str):
-    results = ytmusic.search(name, "songs", limit=2)
-    print(results[0])
+    results = ytmusic.search(name, "songs", limit=10)
+    print(results)
     return results[0]["videoId"]
 
 
