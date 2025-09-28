@@ -47,7 +47,7 @@ class SpotifyStrategy(MusicProviderStrategy):
             "Authorization": "Bearer " + token,
             "Content-Type": "application/json",
         }
-        async with aiohttp.ClientSession(proxy=config.proxy) as session:
+        async with aiohttp.ClientSession() as session:
             resp = await session.get(
                 f"https://api.spotify.com/v1{endpoint}", headers=user_headers
             )
@@ -80,7 +80,6 @@ class SpotifyStrategy(MusicProviderStrategy):
 
         tracks = [x for x in tracks if x]
         tracks = list(dict.fromkeys(tracks))
-        print(tracks)
         return tracks
 
     async def fetch_track(self, track: Track):

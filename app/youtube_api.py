@@ -8,12 +8,13 @@ from yt_dlp import YoutubeDL
 
 from app.config import config
 
-ytmusic = YTMusic(
-    "oauth.json",
-    oauth_credentials=OAuthCredentials(
-        client_id=config.yt.client_id, client_secret=config.yt.client_secret
-    ),
-)
+# ytmusic = YTMusic(
+#     "oauth.json",
+#     oauth_credentials=OAuthCredentials(
+#         client_id=config.yt.client_id, client_secret=config.yt.client_secret
+#     ),
+# )
+ytmusic = YTMusic()
 # if config.proxy:
 #     ytmusic.proxies = {'http': config.proxy, 'https': config.proxy}
 

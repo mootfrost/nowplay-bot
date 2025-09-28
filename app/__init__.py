@@ -182,16 +182,19 @@ async def query_list(e: events.InlineQuery.Event):
     else:
         ctx = MusicProviderContext(YandexMusicStrategy(e.sender_id))
     tracks = (await ctx.get_tracks())[:5]
-    result = []
-
+    tasks = []
     for track in tracks:
-        track = await ctx.get_cached_track(track)
+        tasks.append(ctx.get_cached_track(track))
+    tracks = await asyncio.gather(*tasks)
+
+    results = []
+    for track in tracks:
         music_id = ctx.strategy.track_id(track)
         cache[music_id] = track
-        result.append(
-            await build_response(track, music_id, ctx.strategy.song_link(track))
-        )
-    await e.answer(result)
+        results.append(build_response(track, music_id, ctx.strategy.song_link(track)))
+
+    results = await asyncio.gather(*results)
+    await e.answer(results)
 
 
 async def track_to_file(track):
