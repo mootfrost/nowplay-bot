@@ -257,6 +257,21 @@ async def download_track(track):
     return file
 
 
+@client.on(events.CallbackQuery(pattern='uncache_*'))
+async def uncache_track(e: events.CallbackQuery.Event):
+    data = str(e.data).split("_")
+    if int(data[2]) != e.sender_id:
+        return
+    async with get_session_context() as session:
+        session.execute(delete(Track).where(Track.id == int(data[1])))
+        await session.commit()
+
+
+async def remove_wrong_keyboard(msg_id, delay=120):
+    await asyncio.sleep(delay)
+    await client.edit_message(msg_id, buttons=[])
+
+
 @client.on(events.Raw([UpdateBotInlineSend]))
 async def send_track(e: UpdateBotInlineSend):
     track = cache[e.id]
@@ -264,7 +279,9 @@ async def send_track(e: UpdateBotInlineSend):
         return
 
     file = await download_track(track)
-    await client.edit_message(e.msg_id, file=file)
+    buttons = [Button.inline('Match is wrong', f'uncache_{track.id}_{e.user_id}')]
+    await client.edit_message(e.msg_id, file=file, buttons=buttons)
+    asyncio.create_task(remove_wrong_keyboard(e.msg_id))
 
 
 async def main():
